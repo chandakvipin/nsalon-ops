@@ -398,9 +398,34 @@ function buildSlots(tmpl){
       if(opt.isPairedChild)return;
       for(let q=0;q<(opt.qty||1);q++){
         const sk=(opt.qty||1)>1?opt.id+'_'+q:opt.id;
-        slots.push({slot_key:sk,group_id:grp.id,group_label:grp.label,name:opt.name+((opt.qty||1)>1?' #'+(q+1):''),status:'active',redeemed_on:null,redeemed_by:null,redeemed_service:null,top_level_choice:!!tmpl.topLevelChoice});
+        slots.push({
+          slot_key:sk,
+          group_id:grp.id,
+          group_label:grp.label,
+          name:opt.name+((opt.qty||1)>1?' #'+(q+1):''),
+          status:'active',
+          redeemed_on:null,
+          redeemed_by:null,
+          redeemed_service:null,
+          top_level_choice:!!tmpl.topLevelChoice,
+          is_choice_group:!!(grp.isChoice)  // marks simple mutual-exclusion groups
+        });
       }
-      if(opt.pairedWith){const child=grp.options.find(o=>o.id===opt.pairedWith);if(child)slots.push({slot_key:opt.pairedWith,group_id:grp.id,group_label:grp.label,name:child.name,status:'active',redeemed_on:null,redeemed_by:null,redeemed_service:null,top_level_choice:!!tmpl.topLevelChoice});}
+      if(opt.pairedWith){
+        const child=grp.options.find(o=>o.id===opt.pairedWith);
+        if(child)slots.push({
+          slot_key:opt.pairedWith,
+          group_id:grp.id,
+          group_label:grp.label,
+          name:child.name,
+          status:'active',
+          redeemed_on:null,
+          redeemed_by:null,
+          redeemed_service:null,
+          top_level_choice:!!tmpl.topLevelChoice,
+          is_choice_group:!!(grp.isChoice)
+        });
+      }
     });
   });
   return slots;
@@ -707,9 +732,15 @@ function renderTopChoiceSlots(b,slots){
   return Object.entries(groups).map(([gid,g])=>{const grey=cg!==null&&cg!==gid;return`<div class="choice-group"><div class="choice-group-label">${g.label}${grey?' — Not selected':''}</div>${g.slots.map(s=>renderSlot(b,s,grey)).join('')}</div>`;}).join('');
 }
 function renderNormalSlots(b,slots){
-  const groups={};slots.forEach(s=>{if(!groups[s.group_id])groups[s.group_id]={label:s.group_label,slots:[]};groups[s.group_id].slots.push(s);});
+  const groups={};
+  slots.forEach(s=>{if(!groups[s.group_id])groups[s.group_id]={label:s.group_label,slots:[],isChoice:s.is_choice_group};groups[s.group_id].slots.push(s);});
   const multi=Object.keys(groups).length>1;
-  return Object.entries(groups).map(([,g])=>`${multi?`<div class="choice-group-label">${g.label}</div>`:''}${g.slots.map(s=>renderSlot(b,s,s.status==='cancelled')).join('')}`).join('');
+  return Object.entries(groups).map(([,g])=>{
+    // For isChoice groups, check if a choice has been made (any slot redeemed or cancelled)
+    const choiceMade=g.isChoice&&g.slots.some(s=>s.status==='redeemed'||s.status==='cancelled');
+    const choiceLabel=choiceMade?`${g.label} — choice locked`:`${g.label} — pick one`;
+    return`${(multi||g.isChoice)?`<div class="choice-group-label">${g.isChoice?choiceLabel:g.label}</div>`:''}${g.slots.map(s=>renderSlot(b,s,s.status==='cancelled')).join('')}`;
+  }).join('');
 }
 function renderSlot(b,s,grey){
   const can=s.status==='active'&&b.status==='active';
@@ -748,11 +779,28 @@ async function confirmRedeem(bid,sk){
     const arr=await dbGet('benefits',`id=eq.${bid}`);const b=arr?.[0];if(!b)throw new Error('Not found');
     const tmpl=offerTemplates.find(t=>t.id===b.template_id);
     const thisSlot=b.slots.find(s=>s.slot_key===sk);
+
     const ns=(b.slots||[]).map(s=>{
+      // Mark the redeemed slot
       if(s.slot_key===sk)return{...s,status:'redeemed',redeemed_on:nowISO(),redeemed_by:staff,redeemed_service:svc||s.name};
-      if(tmpl?.topLevelChoice&&s.group_id!==thisSlot?.group_id&&s.status==='active')return{...s,status:'cancelled'};
+
+      // CASE 1: topLevelChoice (₹20,000 bundle) —
+      // cancel all slots in other groups
+      if(tmpl?.topLevelChoice&&s.group_id!==thisSlot?.group_id&&s.status==='active')
+        return{...s,status:'cancelled'};
+
+      // CASE 2: simple isChoice group (₹5,000 / ₹10,000 / ₹15,000) —
+      // once any slot in this group is redeemed, cancel all OTHER slots
+      // in the SAME group that are still active.
+      // Check both the slot flag AND the template definition (fallback for older records)
+      const grpIsChoice = thisSlot?.is_choice_group ||
+        tmpl?.choiceGroups?.find(g=>g.id===thisSlot?.group_id)?.isChoice;
+      if(grpIsChoice&&s.group_id===thisSlot?.group_id&&s.slot_key!==sk&&s.status==='active')
+        return{...s,status:'cancelled'};
+
       return s;
     });
+
     const newStatus=computeStatus(ns,b.expiry_date);
     await dbPatch('benefits',b.id,{slots:ns,status:newStatus,updated_at:nowISO()});
     if(note)await dbPost('benefit_notes',{benefit_id:b.id,mobile:b.mobile,text:`Redemption note: ${note}`,author:currentRole==='owner'?'Owner':'Front Desk',role:currentRole,created_at:nowISO()});
