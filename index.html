@@ -235,7 +235,6 @@ textarea{resize:vertical;min-height:70px;}
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">NSalon</div>
-    <div class="login-sub">Nailashes Nagpur</div>
     <div class="login-tagline">Operations Dashboard — Select your role</div>
     <div class="role-selector">
       <div class="role-btn" onclick="selectRole('frontdesk',this)">
@@ -260,7 +259,7 @@ textarea{resize:vertical;min-height:70px;}
 <!-- APP -->
 <div id="app" style="display:none;">
   <div id="sidebar">
-    <div class="sidebar-logo"><h1>NSalon Ops</h1><p>Nailashes Nagpur</p></div>
+    <div class="sidebar-logo"><h1>NSalon Ops</h1><p>Operations Dashboard</p></div>
     <nav class="sidebar-nav">
       <div class="nav-section">Overview</div>
       <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard',this)"><span class="icon">◈</span> Dashboard</div>
@@ -277,8 +276,10 @@ textarea{resize:vertical;min-height:70px;}
       <div class="nav-item owner-only" data-page="source-reports" onclick="navigate('source-reports',this)"><span class="icon">▦</span> Source Reports</div>
 
       <div class="nav-module">● Management</div>
+      <div class="nav-item" data-page="readme" onclick="navigate('readme',this)"><span class="icon">📖</span> Read Me</div>
       <div class="nav-item owner-only" data-page="reports" onclick="navigate('reports',this)"><span class="icon">▦</span> Privilege Reports</div>
       <div class="nav-item owner-only" data-page="offers" onclick="navigate('offers',this)"><span class="icon">◆</span> Manage Offers</div>
+      <div class="nav-item owner-only" data-page="settings" onclick="navigate('settings',this)"><span class="icon">⚙</span> Settings</div>
     </nav>
     <div class="sidebar-footer">
       <div id="sidebar-role-badge" class="role-badge">Front Desk</div>
@@ -306,6 +307,8 @@ textarea{resize:vertical;min-height:70px;}
       <div id="page-source-reports" class="page"></div>
       <div id="page-reports"      class="page"></div>
       <div id="page-offers"       class="page"></div>
+      <div id="page-settings"     class="page"></div>
+      <div id="page-readme"       class="page"></div>
       <div id="page-client-profile" class="page"></div>
     </div>
   </div>
@@ -372,7 +375,7 @@ let offerTemplates=[
   {id:'svc-hydrafacial',type:'service',label:'HydraFacial ₹4,500',expiryDays:10,choiceGroups:[{id:'sg7',label:'Complimentary',options:[{id:'s7a',name:'H&F Pedicure or Manicure',qty:1}]}]},
   {id:'manual',type:'manual',label:'Manual / Special Approval',expiryDays:30,choiceGroups:[{id:'mg1',label:'Custom',options:[{id:'m1a',name:'Custom',qty:1}]}]}
 ];
-let staffList=['Priya','Anjali','Sonal','Riya','Owner'];
+let staffList=['Owner','Manager'];
 const SOURCES=['Walk-in','Instagram','Google','Referral','JustDial','Other'];
 
 // ═══════════════════════════════════════════
@@ -419,8 +422,8 @@ async function autoExpire(list){
 // ═══════════════════════════════════════════
 // NAV / TOAST / MODAL
 // ═══════════════════════════════════════════
-const PAGE_TITLES={dashboard:'Dashboard','add-benefit':'Add Benefit','search-client':'Search Client',expiring:'Expiring Soon','all-benefits':'All Benefits','add-client':'Add New Client','clients-list':'Client List','source-reports':'Source Reports',reports:'Privilege Reports',offers:'Manage Offers','client-profile':'Client Profile'};
-const PAGE_RENDERERS={dashboard:renderDashboard,'add-benefit':renderAddBenefit,'search-client':renderSearchClient,expiring:renderExpiring,'all-benefits':renderAllBenefits,'add-client':renderAddClient,'clients-list':renderClientsList,'source-reports':renderSourceReports,reports:renderReports,offers:renderOffers};
+const PAGE_TITLES={dashboard:'Dashboard','add-benefit':'Add Benefit','search-client':'Search Client',expiring:'Expiring Soon','all-benefits':'All Benefits','add-client':'Add New Client','clients-list':'Client List','source-reports':'Source Reports',reports:'Privilege Reports',offers:'Manage Offers',settings:'Settings',readme:'Read Me','client-profile':'Client Profile'};
+const PAGE_RENDERERS={dashboard:renderDashboard,'add-benefit':renderAddBenefit,'search-client':renderSearchClient,expiring:renderExpiring,'all-benefits':renderAllBenefits,'add-client':renderAddClient,'clients-list':renderClientsList,'source-reports':renderSourceReports,reports:renderReports,offers:renderOffers,settings:renderSettings,readme:renderReadMe};
 
 function navigate(page,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1098,21 +1101,744 @@ async function renderReports(){
 // ═══════════════════════════════════════════
 function renderOffers(){
   if(currentRole!=='owner')return;
-  const sl=staffList.map((s,i)=>`<div class="offer-row"><div class="offer-row-main"><div class="offer-row-title">${s}</div></div><button class="btn btn-danger btn-sm" onclick="rmStaff(${i})">Remove</button></div>`).join('');
-  const ol=offerTemplates.filter(t=>t.id!=='manual').map(t=>`<div class="offer-row"><div class="offer-row-main"><div class="offer-row-title">${t.label}</div><div class="offer-row-sub">${t.type==='prepaid'?'Prepaid':'Service'} · ${t.expiryDays}-day expiry</div></div><button class="btn btn-outline btn-sm" onclick="editExp('${t.id}')">Edit Expiry</button></div>`).join('');
+
+  // Staff rows — Owner and Manager are protected (index 0,1)
+  const staffRows=staffList.map((s,i)=>{
+    const isProtected=i<2; // Owner, Manager always stay
+    return`<div class="offer-row">
+      <div class="offer-row-main">
+        <div class="offer-row-title">${s}</div>
+        <div class="offer-row-sub">${isProtected?'Default role — cannot be removed':''}</div>
+      </div>
+      ${isProtected?'<span class="ts" style="padding:0 8px;">Protected</span>':`<button class="btn btn-danger btn-sm" onclick="ofRemoveStaff(${i})">Remove</button>`}
+    </div>`;
+  }).join('');
+
+  // Offer rows — grouped by type
+  const prepaidOffers=offerTemplates.filter(t=>t.type==='prepaid');
+  const serviceOffers=offerTemplates.filter(t=>t.type==='service');
+
+  function offerRow(t){
+    // Build readable summary of what's in the offer
+    const summary=t.choiceGroups.map(g=>{
+      const opts=g.options.filter(o=>!o.isPairedChild).map(o=>{
+        let s=o.name;
+        if(o.qty>1)s=`${o.qty}× ${o.name}`;
+        if(o.pairedWith){const child=g.options.find(x=>x.id===o.pairedWith);if(child)s+=` + ${child.name}`;}
+        return s;
+      }).join(' or ');
+      return opts;
+    }).join(' | ');
+
+    return`<div class="offer-row" id="ofrow-${t.id}">
+      <div class="offer-row-main">
+        <div class="offer-row-title">${t.label}</div>
+        <div class="offer-row-sub">${summary} · <b>${t.expiryDays} days</b> expiry</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-outline btn-sm" onclick="ofEditOffer('${t.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="ofDeleteOffer('${t.id}')">Delete</button>
+      </div>
+    </div>`;
+  }
+
   document.getElementById('page-offers').innerHTML=`
-  <div class="section-grid">
-    <div><div class="card mb-20"><div class="card-header"><div class="card-title">Offer Templates</div></div><div class="alert alert-info" style="margin-bottom:14px;">Expiry windows editable here. Update benefit definitions each month when offers change.</div>${ol}</div></div>
-    <div>
-      <div class="card mb-20"><div class="card-header"><div class="card-title">Staff List</div></div><div id="sl-list">${sl}</div><div style="height:1px;background:var(--border);margin:12px 0;"></div><div style="display:flex;gap:8px;"><input type="text" id="ns-inp" placeholder="New staff name" style="flex:1;"><button class="btn btn-primary btn-sm" onclick="addStaff()">Add</button></div></div>
-      <div class="card"><div class="card-header"><div class="card-title">PIN Management</div></div><div class="form-grid"><div class="form-group"><label>Front Desk PIN</label><input type="password" id="fp-inp" placeholder="New PIN" maxlength="6"></div><div class="form-group"><label>Owner PIN</label><input type="password" id="op-inp" placeholder="New PIN" maxlength="6"></div></div><div style="margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="updPINs()">Update PINs</button></div></div>
+  <div class="alert alert-info mb-20">Offers defined here appear in the <b>Add Benefit</b> dropdown. Update at the start of each month when offers change. Changes take effect immediately for new benefits — existing records are unaffected.</div>
+
+  <!-- PREPAID OFFERS -->
+  <div class="card mb-20">
+    <div class="card-header">
+      <div><div class="card-title">Prepaid Offers</div><div class="card-subtitle">Client pays a fixed amount and receives complimentary services</div></div>
+      <button class="btn btn-primary btn-sm" onclick="ofAddOffer('prepaid')">+ Add Prepaid Offer</button>
+    </div>
+    <div id="of-prepaid-list">
+      ${prepaidOffers.map(offerRow).join('')||'<div class="empty-state" style="padding:20px"><div class="empty-state-text">No prepaid offers defined</div></div>'}
+    </div>
+  </div>
+
+  <!-- SERVICE OFFERS -->
+  <div class="card mb-20">
+    <div class="card-header">
+      <div><div class="card-title">Service Offers</div><div class="card-subtitle">Client books a qualifying service and receives a complimentary add-on</div></div>
+      <button class="btn btn-primary btn-sm" onclick="ofAddOffer('service')">+ Add Service Offer</button>
+    </div>
+    <div id="of-service-list">
+      ${serviceOffers.map(offerRow).join('')||'<div class="empty-state" style="padding:20px"><div class="empty-state-text">No service offers defined</div></div>'}
+    </div>
+  </div>
+
+  <!-- STAFF LIST -->
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Staff List</div><div class="card-subtitle">Names used in "Issued By" and "Handled By" dropdowns</div></div>
+    </div>
+    <div id="of-staff-list">${staffRows}</div>
+    <div style="height:1px;background:var(--border);margin:16px 0;"></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="of-ns-inp" placeholder="New staff name (e.g. Priya)" style="max-width:260px;">
+      <button class="btn btn-primary btn-sm" onclick="ofAddStaff()">Add Staff</button>
+    </div>
+    <div class="form-hint" style="margin-top:8px;">Owner and Manager are default and cannot be removed.</div>
+  </div>`;
+
+  // ── STAFF ──
+  window.ofAddStaff=function(){
+    const n=document.getElementById('of-ns-inp').value.trim();
+    if(!n){toast('Enter staff name.','error');return;}
+    if(staffList.includes(n)){toast('Staff already exists.','warn');return;}
+    staffList.push(n);
+    document.getElementById('of-ns-inp').value='';
+    toast(n+' added to staff list.','success');
+    renderOffers();
+  };
+  window.ofRemoveStaff=function(i){
+    if(i<2){toast('Cannot remove default roles.','error');return;}
+    if(!confirm('Remove "'+staffList[i]+'" from staff list?'))return;
+    staffList.splice(i,1);
+    toast('Staff removed.','default');
+    renderOffers();
+  };
+
+  // ── DELETE OFFER ──
+  window.ofDeleteOffer=function(id){
+    const t=offerTemplates.find(x=>x.id===id);
+    if(!t){toast('Offer not found.','error');return;}
+    showModal(`<div class="modal">
+      <div class="modal-header"><div class="modal-title">Delete Offer</div><button class="close-btn" onclick="closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="alert alert-error">You are about to delete <b>${t.label}</b>. This will remove it from the Add Benefit dropdown. Existing benefit records using this offer are not affected.</div>
+        <div style="margin-top:14px;font-size:13px;color:var(--charcoal-mid);">Are you sure?</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="ofConfirmDelete('${id}')">Yes, Delete</button>
+      </div>
+    </div>`);
+  };
+  window.ofConfirmDelete=function(id){
+    const i=offerTemplates.findIndex(t=>t.id===id);
+    if(i>-1)offerTemplates.splice(i,1);
+    closeModal();
+    toast('Offer deleted.','default');
+    renderOffers();
+  };
+
+  // ── ADD / EDIT OFFER ──
+  window.ofAddOffer=function(type){ofShowOfferModal(null,type);};
+  window.ofEditOffer=function(id){ofShowOfferModal(id,null);};
+}
+
+// ── OFFER MODAL (Add or Edit) ──
+function ofShowOfferModal(editId, forceType){
+  const isEdit=!!editId;
+  const t=isEdit?offerTemplates.find(x=>x.id===editId):null;
+  const type=t?t.type:forceType;
+
+  // Build existing benefits lines for editing
+  // We represent the offer as:
+  //   Label, ExpiryDays, and a list of "benefit lines"
+  //   Each benefit line = { name, qty, pairedName (optional) }
+  //   For prepaid with topLevelChoice, lines are grouped into choice groups
+  //
+  // For simplicity in the UI we support two formats:
+  //   SIMPLE: one list of benefits (client picks one)
+  //   BUNDLE: top-level choice groups (client picks one group)
+
+  const isBundle=t?.topLevelChoice||false;
+
+  // Flatten existing benefits for simple display
+  let existingLines=[];
+  if(t){
+    if(t.topLevelChoice){
+      // Each choice group becomes a line with a group label
+      t.choiceGroups.forEach(g=>{
+        const names=g.options.filter(o=>!o.isPairedChild).map(o=>{
+          let s=o.name;
+          if(o.qty>1)s=`${o.qty}× ${o.name}`;
+          if(o.pairedWith){const ch=g.options.find(x=>x.id===o.pairedWith);if(ch)s+=` + ${ch.name}`;}
+          return s;
+        }).join(' + ');
+        existingLines.push({groupLabel:g.label,names});
+      });
+    } else {
+      t.choiceGroups.forEach(g=>{
+        g.options.filter(o=>!o.isPairedChild).forEach(o=>{
+          let nm=o.name;
+          if(o.qty>1)nm=`${o.qty}× ${o.name}`;
+          if(o.pairedWith){const ch=g.options.find(x=>x.id===o.pairedWith);if(ch)nm+=` + ${ch.name}`;}
+          existingLines.push({names:nm});
+        });
+      });
+    }
+  }
+
+  const typeLabel=type==='prepaid'?'Prepaid':'Service';
+
+  showModal(`<div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <div class="modal-title">${isEdit?'Edit':'Add'} ${typeLabel} Offer</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="alert alert-info" style="margin-bottom:16px;">
+        ${type==='prepaid'
+          ?'<b>Prepaid offer:</b> Client pays a lump sum and gets complimentary services. Define what they receive below.'
+          :'<b>Service offer:</b> Client books a qualifying service and gets a complimentary add-on. Define the trigger and the benefit below.'}
+      </div>
+
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group full">
+          <label>Offer Label * <span class="form-hint" style="display:inline;">(shown in dropdown)</span></label>
+          <input type="text" id="om-label" placeholder="${type==='prepaid'?'e.g. Prepaid ₹10,000':'e.g. Facial ₹3,500+'}" value="${t?t.label:''}">
+        </div>
+        <div class="form-group">
+          <label>Expiry Days *</label>
+          <input type="number" id="om-expiry" min="1" max="365" placeholder="${type==='prepaid'?'42':'10'}" value="${t?t.expiryDays:(type==='prepaid'?42:10)}">
+          <div class="form-hint">${type==='prepaid'?'Typically 42 days (6 weeks) for prepaid':'Typically 10 days for service offers'}</div>
+        </div>
+        <div class="form-group">
+          <label>Offer Structure</label>
+          <select id="om-structure" onchange="ofStructureChange()">
+            <option value="simple" ${!isBundle?'selected':''}>Simple — client picks one from a list</option>
+            <option value="bundle" ${isBundle?'selected':''}>Bundle Groups — client picks one group</option>
+          </select>
+          <div class="form-hint">Use Bundle Groups for offers like "Option A: Facial + Pedi OR Option B: Keratin"</div>
+        </div>
+      </div>
+
+      <!-- SIMPLE STRUCTURE -->
+      <div id="om-simple-section" style="${isBundle?'display:none':''}">
+        <div class="form-section-title" style="font-family:var(--font-display);font-size:15px;font-weight:500;color:var(--burgundy);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--burgundy-pale);">
+          ${type==='prepaid'?'Complimentary Benefits (client picks one)':'Complimentary Benefit'}
+        </div>
+        <div id="om-simple-lines">
+          ${(isEdit&&!isBundle?existingLines:[{names:''}]).map((l,i)=>ofBenefitLineHTML(i,l.names)).join('')}
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="ofAddLine()">+ Add another option</button>
+        <div class="form-hint" style="margin-top:6px;">Each line = one option the client can choose. For "2× Nail Extension Removal", enter <b>qty = 2</b>. For paired services like Mani+Pedi, use the paired field.</div>
+      </div>
+
+      <!-- BUNDLE STRUCTURE -->
+      <div id="om-bundle-section" style="${isBundle?'':'display:none'}">
+        <div class="form-section-title" style="font-family:var(--font-display);font-size:15px;font-weight:500;color:var(--burgundy);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--burgundy-pale);">
+          Choice Groups (client picks one entire group)
+        </div>
+        <div id="om-bundle-groups">
+          ${(isEdit&&isBundle?existingLines:[{groupLabel:'Option A',names:''}]).map((g,i)=>ofBundleGroupHTML(i,g.groupLabel,g.names)).join('')}
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="ofAddGroup()">+ Add another group</button>
+        <div class="form-hint" style="margin-top:6px;">Example: Group "Option A" = "Skeyndor Facial + Café H&F Pedi or Mani", Group "Option B" = "Global Colour", Group "Option C" = "Keratin".</div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="om-save-btn" onclick="ofSaveOffer('${editId||''}','${type}')">
+        ${isEdit?'Save Changes':'Add Offer'}
+      </button>
+    </div>
+  </div>`);
+}
+
+function ofBenefitLineHTML(i,val){
+  return`<div class="offer-row" id="om-line-${i}" style="margin-bottom:8px;gap:8px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;"><input type="text" id="om-ln-${i}" placeholder="e.g. Skinora Facial  or  H&F Pedicure or Manicure" value="${val||''}"></div>
+    <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <label style="font-size:10px;color:var(--charcoal-light);">Qty</label>
+        <input type="number" id="om-lq-${i}" value="1" min="1" max="10" style="width:56px;padding:6px 8px;">
+      </div>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-top:14px;" onclick="ofRemoveLine(${i})">✕</button>
     </div>
   </div>`;
-  window.addStaff=function(){const n=document.getElementById('ns-inp').value.trim();if(!n)return;if(staffList.includes(n)){toast('Already exists.','warn');return;}staffList.push(n);document.getElementById('ns-inp').value='';toast('Staff added.','success');renderOffers();};
-  window.rmStaff=function(i){if(!confirm('Remove '+staffList[i]+'?'))return;staffList.splice(i,1);toast('Removed.');renderOffers();};
-  window.editExp=function(id){const t=offerTemplates.find(x=>x.id===id);showModal(`<div class="modal"><div class="modal-header"><div class="modal-title">Edit: ${t.label}</div><button class="close-btn" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="form-group"><label>Expiry Days</label><input type="number" id="ed-inp" value="${t.expiryDays}" min="1"></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveExp('${id}')">Save</button></div></div>`);};
-  window.saveExp=function(id){const d=parseInt(document.getElementById('ed-inp').value);if(!d||d<1){toast('Invalid.','error');return;}offerTemplates.find(t=>t.id===id).expiryDays=d;closeModal();toast('Updated.','success');renderOffers();};
-  window.updPINs=function(){const fp=document.getElementById('fp-inp').value,op=document.getElementById('op-inp').value;if(fp)PINS.frontdesk=fp;if(op)PINS.owner=op;document.getElementById('fp-inp').value='';document.getElementById('op-inp').value='';toast('PINs updated.','success');};
+}
+
+function ofBundleGroupHTML(i,label,names){
+  return`<div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;margin-bottom:10px;" id="om-grp-${i}">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <input type="text" id="om-gl-${i}" placeholder="Group label e.g. Option A — Bundle" value="${label||'Option '+(i+1)}" style="flex:1;">
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="ofRemoveGroup(${i})">✕</button>
+    </div>
+    <input type="text" id="om-gn-${i}" placeholder="Benefits in this group e.g. Skeyndor Facial + Café H&F Pedi or Mani" value="${names||''}" style="width:100%;">
+    <div class="form-hint" style="margin-top:4px;">List all services in this group. Use " + " to join paired services.</div>
+  </div>`;
+}
+
+let omLineCount=1,omGroupCount=1;
+window.ofStructureChange=function(){
+  const v=document.getElementById('om-structure').value;
+  document.getElementById('om-simple-section').style.display=v==='simple'?'block':'none';
+  document.getElementById('om-bundle-section').style.display=v==='bundle'?'block':'none';
+};
+window.ofAddLine=function(){
+  const container=document.getElementById('om-simple-lines');
+  const div=document.createElement('div');
+  div.innerHTML=ofBenefitLineHTML(omLineCount,'');
+  container.appendChild(div.firstElementChild);
+  omLineCount++;
+};
+window.ofRemoveLine=function(i){const el=document.getElementById('om-line-'+i);if(el)el.remove();};
+window.ofAddGroup=function(){
+  const container=document.getElementById('om-bundle-groups');
+  const div=document.createElement('div');
+  div.innerHTML=ofBundleGroupHTML(omGroupCount,'Option '+(omGroupCount+1),'');
+  container.appendChild(div.firstElementChild);
+  omGroupCount++;
+};
+window.ofRemoveGroup=function(i){const el=document.getElementById('om-grp-'+i);if(el)el.remove();};
+
+window.ofSaveOffer=function(editId,type){
+  const label=document.getElementById('om-label').value.trim();
+  const expiry=parseInt(document.getElementById('om-expiry').value);
+  const structure=document.getElementById('om-structure').value;
+  if(!label){toast('Enter offer label.','error');return;}
+  if(!expiry||expiry<1){toast('Enter valid expiry days.','error');return;}
+
+  // Generate a unique ID
+  const newId=editId||(type+'_'+Date.now());
+
+  let choiceGroups=[];
+  let topLevelChoice=false;
+  let optCounter=0;
+
+  if(structure==='simple'){
+    // Collect all line inputs
+    const lines=document.querySelectorAll('[id^="om-ln-"]');
+    const options=[];
+    lines.forEach(inp=>{
+      const idx=inp.id.replace('om-ln-','');
+      const nm=inp.value.trim();
+      if(!nm)return;
+      const qty=parseInt(document.getElementById('om-lq-'+idx)?.value)||1;
+      const optId='o_'+newId+'_'+(optCounter++);
+      // Check if it contains " + " — treat as paired services
+      if(nm.includes(' + ')&&qty===1){
+        const parts=nm.split(' + ');
+        const parentId=optId;
+        const childId='o_'+newId+'_'+(optCounter++);
+        options.push({id:parentId,name:parts[0].trim(),qty:1,pairedWith:childId});
+        options.push({id:childId,name:parts[1].trim(),qty:1,isPairedChild:true});
+      } else {
+        options.push({id:optId,name:nm,qty});
+      }
+    });
+    if(!options.length){toast('Add at least one benefit line.','error');return;}
+    choiceGroups=[{id:'cg_'+newId,label:'Choose one option',isChoice:true,options}];
+    topLevelChoice=false;
+
+  } else {
+    // Bundle groups
+    topLevelChoice=true;
+    const groups=document.querySelectorAll('[id^="om-grp-"]');
+    let hasContent=false;
+    groups.forEach(grp=>{
+      const idx=grp.id.replace('om-grp-','');
+      const gl=document.getElementById('om-gl-'+idx)?.value.trim();
+      const gn=document.getElementById('om-gn-'+idx)?.value.trim();
+      if(!gn)return;
+      hasContent=true;
+      const grpId='cg_'+newId+'_'+idx;
+      const options=[];
+      // Split by " + " for paired services within the group
+      const parts=gn.split(' + ');
+      if(parts.length>1){
+        const parentId='o_'+newId+'_'+(optCounter++);
+        const childId='o_'+newId+'_'+(optCounter++);
+        options.push({id:parentId,name:parts[0].trim(),qty:1,pairedWith:childId});
+        options.push({id:childId,name:parts.slice(1).join(' + ').trim(),qty:1,isPairedChild:true});
+      } else {
+        options.push({id:'o_'+newId+'_'+(optCounter++),name:gn,qty:1});
+      }
+      choiceGroups.push({id:grpId,label:gl||('Option '+(choiceGroups.length+1)),options});
+    });
+    if(!hasContent){toast('Add at least one group with a benefit.','error');return;}
+  }
+
+  const newOffer={id:newId,type,label,expiryDays:expiry,topLevelChoice,choiceGroups};
+
+  if(editId){
+    const i=offerTemplates.findIndex(t=>t.id===editId);
+    if(i>-1)offerTemplates[i]=newOffer;
+    toast('Offer updated.','success');
+  } else {
+    // Insert before 'manual'
+    const manualIdx=offerTemplates.findIndex(t=>t.id==='manual');
+    if(manualIdx>-1)offerTemplates.splice(manualIdx,0,newOffer);
+    else offerTemplates.push(newOffer);
+    toast('Offer added.','success');
+  }
+  omLineCount=1;omGroupCount=1;
+  closeModal();
+  renderOffers();
+};
+
+// ═══════════════════════════════════════════
+// SETTINGS (Owner only)
+// ═══════════════════════════════════════════
+function renderSettings(){
+  if(currentRole!=='owner'){document.getElementById('page-settings').innerHTML='<div class="alert alert-error">Access denied. Settings are only available to the Owner.</div>';return;}
+  document.getElementById('page-settings').innerHTML=`
+  <div style="max-width:700px;">
+
+    <!-- PIN MANAGEMENT -->
+    <div class="card mb-20">
+      <div class="card-header">
+        <div><div class="card-title">PIN Management</div><div class="card-subtitle">Only the Owner can change PINs</div></div>
+      </div>
+      <div class="alert alert-info" style="margin-bottom:18px;">PINs are stored in the browser session only. If you clear browser data or use a new device, the default PINs (<b>Front Desk: 1234 · Owner: 0000</b>) will apply until changed again on that device. For a permanent PIN system, a future update will store PINs in the database.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <!-- Front Desk PIN -->
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;">
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Front Desk PIN</div>
+          <div style="font-size:12px;color:var(--charcoal-light);margin-bottom:14px;">Used by front desk staff to log in. Share this with staff only.</div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>Current PIN</label>
+            <input type="password" id="fd-current" placeholder="Enter current Front Desk PIN" maxlength="6">
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>New PIN</label>
+            <input type="password" id="fd-new" placeholder="Enter new PIN (4–6 digits)" maxlength="6">
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Confirm New PIN</label>
+            <input type="password" id="fd-confirm" placeholder="Re-enter new PIN" maxlength="6">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="changePIN('frontdesk')">Update Front Desk PIN</button>
+        </div>
+
+        <!-- Owner PIN -->
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;">
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Owner / Manager PIN</div>
+          <div style="font-size:12px;color:var(--charcoal-light);margin-bottom:14px;">Full access PIN. Keep this private. Do not share with front desk.</div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>Current PIN</label>
+            <input type="password" id="ow-current" placeholder="Enter current Owner PIN" maxlength="6">
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>New PIN</label>
+            <input type="password" id="ow-new" placeholder="Enter new PIN (4–6 digits)" maxlength="6">
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Confirm New PIN</label>
+            <input type="password" id="ow-confirm" placeholder="Re-enter new PIN" maxlength="6">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="changePIN('owner')">Update Owner PIN</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROLE PERMISSIONS -->
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">Role Permissions</div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Action</th><th>Front Desk</th><th>Owner / Manager</th></tr></thead>
+        <tbody>
+          ${[
+            ['Add benefit','✅','✅'],
+            ['Search client','✅','✅'],
+            ['Redeem benefit','✅','✅'],
+            ['View expiring soon','✅','✅'],
+            ['Add new client (source)','✅','✅'],
+            ['View client list','✅','✅'],
+            ['Add notes','✅','✅'],
+            ['Edit benefit details','❌','✅'],
+            ['Cancel a benefit','❌','✅'],
+            ['Reactivate expired benefit','❌','✅'],
+            ['Delete notes','❌','✅'],
+            ['Edit client record','❌','✅'],
+            ['View privilege reports','❌','✅'],
+            ['View source reports','❌','✅'],
+            ['Export CSV','❌','✅'],
+            ['Manage offer templates','❌','✅'],
+            ['Manage staff list','❌','✅'],
+            ['Change PINs','❌','✅ (Owner only)'],
+          ].map(([action,fd,ow])=>`<tr><td>${action}</td><td style="text-align:center;">${fd}</td><td style="text-align:center;">${ow}</td></tr>`).join('')}
+        </tbody>
+      </table></div>
+      <div style="margin-top:12px;font-size:12px;color:var(--charcoal-light);">Front Desk cannot undo their own actions. Any correction or override must be requested from the Owner / Manager.</div>
+    </div>
+
+    <!-- APP INFO -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">App Information</div></div>
+      <div class="report-stat"><span class="report-stat-label">App Name</span><span class="report-stat-value">NSalon Ops</span></div>
+      <div class="report-stat"><span class="report-stat-label">Version</span><span class="report-stat-value">1.1.0</span></div>
+      <div class="report-stat"><span class="report-stat-label">Database</span><span class="report-stat-value">Supabase (PostgreSQL)</span></div>
+      <div class="report-stat"><span class="report-stat-label">Modules Active</span><span class="report-stat-value">Privilege Tracker · Client Sources</span></div>
+      <div class="report-stat"><span class="report-stat-label">Modules Planned</span><span class="report-stat-value">Staff Log · Birthday Follow-ups · Prepaid Balance</span></div>
+      <div class="report-stat" style="border:none;"><span class="report-stat-label">Support</span><span class="report-stat-value" style="font-size:13px;color:var(--charcoal-light);">Contact your developer for changes</span></div>
+    </div>
+
+  </div>`;
+}
+
+function changePIN(role){
+  const currentId=role==='frontdesk'?'fd-current':'ow-current';
+  const newId=role==='frontdesk'?'fd-new':'ow-new';
+  const confirmId=role==='frontdesk'?'fd-confirm':'ow-confirm';
+  const label=role==='frontdesk'?'Front Desk':'Owner';
+  const current=document.getElementById(currentId).value;
+  const newPin=document.getElementById(newId).value;
+  const confirmPin=document.getElementById(confirmId).value;
+  if(!current){toast('Enter current PIN.','error');return;}
+  if(current!==PINS[role]){toast('Current '+label+' PIN is incorrect.','error');return;}
+  if(!newPin||newPin.length<4){toast('New PIN must be at least 4 digits.','error');return;}
+  if(newPin!==confirmPin){toast('New PINs do not match.','error');return;}
+  if(newPin===current){toast('New PIN must be different from current PIN.','error');return;}
+  PINS[role]=newPin;
+  document.getElementById(currentId).value='';
+  document.getElementById(newId).value='';
+  document.getElementById(confirmId).value='';
+  toast(label+' PIN updated successfully.','success');
+}
+
+// ═══════════════════════════════════════════
+// READ ME
+// ═══════════════════════════════════════════
+function renderReadMe(){
+  const isOwner=currentRole==='owner';
+  document.getElementById('page-readme').innerHTML=`
+  <div style="max-width:780px;">
+
+    <!-- INTRO -->
+    <div class="card mb-20" style="border-left:4px solid var(--burgundy);">
+      <div style="display:flex;align-items:flex-start;gap:16px;">
+        <div style="font-size:28px;flex-shrink:0;">📖</div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--burgundy);margin-bottom:6px;">NSalon Ops — Guide & Reference</div>
+          <div style="font-size:13px;color:var(--charcoal-mid);line-height:1.7;">This app tracks two things: <b>complimentary benefits</b> promised to clients, and <b>where new clients come from</b>. It does not handle billing, payments, or inventory — DINGG remains the billing system. This guide covers everything you need to use the app correctly.</div>
+          ${isOwner?`<div style="margin-top:10px;" class="alert alert-purple">You are logged in as <b>Owner / Manager</b>. You have full access including edit, cancel, reactivate, reports, and settings.</div>`:`<div style="margin-top:10px;" class="alert alert-info">You are logged in as <b>Front Desk</b>. If you need to undo or change something, inform the Owner — they are the only one who can correct entries.</div>`}
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK REFERENCE CARD -->
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">⚡ Quick Reference — Daily Tasks</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        ${[
+          ['Client buys a prepaid plan','Go to Add Benefit → fill mobile, name, select the prepaid offer, enter the DINGG invoice number → Save'],
+          ['Client avails a qualifying service','Go to Add Benefit → fill mobile, name, select the service offer, enter DINGG invoice number → Save'],
+          ['Client comes to redeem a benefit','Go to Search Client → enter mobile → find the benefit card → click Redeem → fill details → Confirm. Then create ₹0 entry in DINGG.'],
+          ['Check which benefits are expiring','Go to Expiring Soon → filter by 3, 7, or 15 days → call clients or send WhatsApp reminder'],
+          ['Add a new client walk-in','Go to Add New Client → fill name, mobile, source, first service → Save'],
+          ['Send WhatsApp reminder','Search client → open their profile → click WhatsApp Reminder button → message is copied → paste in WhatsApp'],
+          ['Check dashboard numbers','Go to Dashboard — shows live counts of active, expiring, redeemed benefits and new clients this month'],
+          ['Made a mistake in entry','You cannot undo. Note it down and inform the Owner immediately to correct it'],
+        ].map(([task,action])=>`<div style="padding:12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--cream);">
+          <div style="font-size:12px;font-weight:500;color:var(--burgundy);margin-bottom:4px;">📌 ${task}</div>
+          <div style="font-size:12px;color:var(--charcoal-mid);line-height:1.6;">${action}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- MODULE 1: PRIVILEGE TRACKER -->
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">🎁 Module 1 — Privilege Tracker</div></div>
+
+      <div style="font-size:13px;color:var(--charcoal-mid);margin-bottom:16px;line-height:1.7;">Tracks every complimentary benefit promised to a client — whether from a prepaid purchase or a qualifying service. Every benefit has a status: <b>Active</b> (not yet used), <b>Redeemed</b> (used), <b>Expired</b> (time ran out), or <b>Cancelled</b> (manually cancelled by Owner).</div>
+
+      ${rmSection('Adding a Benefit',[
+        'Go to <b>Add Benefit</b> in the sidebar.',
+        'Enter the client\'s <b>10-digit mobile number first</b>. If the client exists, their name will auto-fill.',
+        'Select the <b>Offer Type</b> from the dropdown. This auto-calculates the expiry date (42 days for prepaid, 10 days for service offers).',
+        'Enter the <b>Invoice / Bill Number</b> from DINGG. This is mandatory — it links the benefit to the actual billing record for future dispute resolution.',
+        'Select the staff member who issued the benefit.',
+        'Add any notes if needed (e.g. "client prefers morning appointments").',
+        'Click <b>Save Benefit</b>. A green confirmation will appear.',
+        '<b>Important:</b> If the client already has an active benefit of the same type, the app will warn you with a red alert. Verify with the client before proceeding.',
+      ])}
+
+      ${rmSection('Benefit Expiry Rules',[
+        '<b>Prepaid offers</b> — expire 42 days (6 weeks) from issue date.',
+        '<b>Service offers</b> — expire 10 days from issue date.',
+        'Expiry is auto-calculated when you select the offer type. You can manually adjust the expiry date if needed.',
+        'The app automatically marks benefits as Expired once their expiry date has passed.',
+        '<b>Owner only:</b> Expired benefits can be reactivated with a new expiry date. A note is logged automatically.',
+      ])}
+
+      ${rmSection('Redeeming a Benefit',[
+        'Go to <b>Search Client</b>, enter the client\'s mobile number.',
+        'Find the benefit card and click the green <b>Redeem</b> button next to the specific service.',
+        'Fill in: Redemption Date, Staff Who Performed, Service Performed (as it will appear in DINGG).',
+        'Click <b>Confirm Redemption</b>.',
+        '<b>After confirming — go to DINGG and create a ₹0 service entry</b> for the redeemed service. This is mandatory for billing records.',
+        'The benefit slot will change to Redeemed and the timestamp is saved.',
+        '<b>Partial redemption:</b> If a client has a bundle (e.g. Skeyndor Facial + Pedi/Mani), they can redeem one service now and the other later. The unredeemed service stays Active.',
+      ])}
+
+      ${rmSection('The ₹20,000 Prepaid — Bundle Logic',[
+        'This offer gives the client a choice between three options: Option A (Skeyndor Facial + Café H&F Pedi/Mani), Option B (Global Colour), or Option C (Keratin).',
+        'All three options show as Active initially.',
+        'The moment the client redeems <b>any service from one option</b>, the other two options are automatically locked (shown greyed out).',
+        'Within Option A: if the client redeems the Facial but not the Pedi/Mani, the Pedi/Mani stays Active until expiry.',
+        'Example: Client redeems Skeyndor Facial → Option A stays partially active (Pedi/Mani pending) → Option B and C are cancelled.',
+      ])}
+
+      ${rmSection('The ₹10,000 Prepaid — Café H&F Mani-Pedi',[
+        'The Café H&F Mani-Pedi means <b>two separate services</b>: one Manicure AND one Pedicure.',
+        'These appear as two separate redeemable slots — they can be redeemed on the same visit or different visits.',
+        'The ₹5,000 "2× Nail Extension Removal" similarly creates two separate slots.',
+        'All other Pedi/Mani mentions in other offers mean client\'s choice of either one — not both.',
+      ])}
+    </div>
+
+    <!-- MODULE 2: CLIENT SOURCES -->
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">👥 Module 2 — Client Source Tracker</div></div>
+
+      <div style="font-size:13px;color:var(--charcoal-mid);margin-bottom:16px;line-height:1.7;">Tracks where new clients come from so the Owner can analyse which acquisition channels are working. This is separate from DINGG — DINGG handles billing, this tracks origin and conversion.</div>
+
+      ${rmSection('Adding a New Client',[
+        'Go to <b>Add New Client</b> in the sidebar.',
+        'Enter mobile number, name, first visit date, and what service they came in for.',
+        'Select the <b>source</b>: Walk-in, Instagram, Google, Referral, JustDial, or Other.',
+        'If the source is <b>Referral</b>, two new fields appear — enter the referring client\'s name and mobile number.',
+        'Select which staff handled the client.',
+        'If the client converted to a prepaid plan on the same visit, mark <b>Converted to Prepaid: Yes</b> and set the date.',
+        'Click <b>Save Client</b>.',
+      ])}
+
+      ${rmSection('Linked Client Profiles',[
+        'When you search a client by mobile number, the app checks both modules.',
+        'If a client source record exists, it appears as a purple <b>Linked Client Record</b> panel at the top of their profile — showing source, first visit, referral info, and prepaid conversion status.',
+        'If no source record exists, a button appears to add one directly.',
+        'This linking is automatic — it uses the mobile number to connect the two records.',
+      ])}
+
+      ${rmSection('Source Reports (Owner only)',[
+        'Go to <b>Source Reports</b> to see bar charts of client sources for all time and the current month.',
+        'The <b>Conversion by Source</b> table shows which source brings the most prepaid members — this is the most valuable metric.',
+        'The <b>Top Referrers</b> list shows which clients have referred the most people — consider rewarding them.',
+        'Use <b>Export CSV</b> to download the full client list for external analysis.',
+      ])}
+    </div>
+
+    <!-- ROLES & PERMISSIONS -->
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">🔐 Roles & What You Can Do</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-weight:500;font-size:13px;margin-bottom:10px;color:var(--charcoal);">Front Desk</div>
+          ${['Add benefits','Search clients','Redeem benefits','View expiring soon','Add new client records','View client list','Add notes on any record','Send WhatsApp reminders'].map(a=>`<div style="font-size:12px;color:var(--green);padding:3px 0;">✅ ${a}</div>`).join('')}
+          ${['Edit or delete any entry','Cancel a benefit','Reactivate expired benefits','View reports or exports','Change PINs or settings','Manage offers or staff list'].map(a=>`<div style="font-size:12px;color:var(--red);padding:3px 0;">❌ ${a}</div>`).join('')}
+          <div style="margin-top:10px;font-size:12px;color:var(--amber);background:var(--amber-pale);padding:8px 10px;border-radius:var(--radius-sm);">⚠ Cannot undo your own actions. Inform the Owner immediately if a mistake is made.</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+          <div style="font-weight:500;font-size:13px;margin-bottom:10px;color:var(--charcoal);">Owner / Manager</div>
+          ${['Everything Front Desk can do','Edit benefit details','Cancel benefits (with reason)','Reactivate expired benefits','Delete notes','Edit client source records','View Privilege Reports','View Source Reports','Export CSV data','Manage offer templates','Manage staff list','Change PINs (Settings)'].map(a=>`<div style="font-size:12px;color:var(--green);padding:3px 0;">✅ ${a}</div>`).join('')}
+          <div style="margin-top:10px;font-size:12px;color:var(--blue);background:var(--blue-pale);padding:8px 10px;border-radius:var(--radius-sm);">ℹ All Owner actions are logged with a timestamp in the Notes section of the affected record.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SYNC & CONNECTIVITY -->
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">🔄 Sync Indicator — What the Colours Mean</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        ${[
+          ['synced','🟢 Green — Synced','Last save was successful. Data is live in the database. All good.'],
+          ['syncing','🟡 Yellow — Syncing','A save or load is in progress. Wait for it to turn green before closing the tab.'],
+          ['error','🔴 Red — Sync Failed','Something went wrong with the last save. Do not close the tab. Try the action again. If it persists, check your internet connection.'],
+          ['offline','⚫ Grey — Offline','Your device has lost internet connection. The app will not save changes until you reconnect. Reconnect and retry.'],
+        ].map(([cls,label,desc])=>`<div style="padding:12px;border:1px solid var(--border);border-radius:var(--radius-md);">
+          <div style="font-size:12px;font-weight:500;margin-bottom:4px;">${label}</div>
+          <div style="font-size:12px;color:var(--charcoal-mid);line-height:1.6;">${desc}</div>
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--charcoal-light);">Data is stored in a cloud database (Supabase). Multiple devices can use the app simultaneously — changes made on one device are visible on all others after a page refresh or navigation.</div>
+    </div>
+
+    <!-- DINGG INTEGRATION NOTE -->
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">🧾 DINGG — How the Two Systems Work Together</div></div>
+      <div style="font-size:13px;color:var(--charcoal-mid);line-height:1.7;margin-bottom:14px;">NSalon Ops and DINGG are separate systems. DINGG handles all billing and payments. NSalon Ops only tracks entitlements and client data. They are connected manually — here is the exact workflow:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${[
+          ['When a prepaid plan is sold','1. Bill the client in DINGG as usual. 2. Note the invoice number. 3. Go to NSalon Ops → Add Benefit → enter the invoice number. Done.'],
+          ['When a qualifying service is billed','1. Bill the service in DINGG. 2. Note the invoice number. 3. Go to NSalon Ops → Add Benefit → select the service offer → enter invoice number. Done.'],
+          ['When a complimentary service is redeemed','1. Redeem the benefit in NSalon Ops (click Redeem, fill details, confirm). 2. Go to DINGG and create a ₹0 service entry for the same service. Both systems must be updated.'],
+          ['Invoice Number — why it matters','If a client disputes whether they received their complimentary benefit, the invoice number links the NSalon Ops record directly to the DINGG bill. Always enter it accurately.'],
+        ].map(([step,detail])=>`<div style="padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--cream);">
+          <div style="font-size:12px;font-weight:500;color:var(--burgundy);margin-bottom:3px;">${step}</div>
+          <div style="font-size:12px;color:var(--charcoal-mid);line-height:1.6;">${detail}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- TROUBLESHOOTING -->
+    <div class="card mb-20">
+      <div class="card-header"><div class="card-title">🛠 Troubleshooting</div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${[
+          ['App not loading / blank screen','Check internet connection. Hard refresh the page (Ctrl+Shift+R on Windows, Cmd+Shift+R on Mac). If still blank, contact the Owner.'],
+          ['Sync indicator stuck on yellow','Your internet may be slow or interrupted. Wait 10–15 seconds. If it turns red, refresh the page and try again.'],
+          ['Sync indicator showing red','Do not close the tab. Check internet connection. Refresh the page. Try the action again. If it keeps failing, note down what you were doing and inform the Owner.'],
+          ['Client mobile number not found','Make sure you are entering exactly 10 digits with no spaces or country code. Search only works with an exact 10-digit number.'],
+          ['Wrong benefit was added','Do not try to fix it yourself. Inform the Owner with the client name, mobile number, and what went wrong. Owner can edit or cancel the entry.'],
+          ['Benefit was redeemed by mistake','Inform the Owner immediately. Front Desk cannot undo a redemption. Owner will need to edit the benefit record manually.'],
+          ['Expiry date looks wrong','The expiry is auto-calculated from the issue date. If the issue date was entered incorrectly, inform the Owner to edit it. Only Owner can change dates.'],
+          ['Duplicate warning keeps appearing','Check if the client already has an active benefit of that type. Search the client profile to verify before proceeding. If it is a genuine new benefit, you can proceed past the warning.'],
+          ['PIN not working','Default PINs are: Front Desk 1234, Owner 0000. If the PIN has been changed and you have forgotten it, contact the Owner. Only the Owner can reset PINs (Settings page).'],
+          ['App is slow','This is usually an internet connection issue. The app fetches data from a cloud database on every page load. A stable connection is recommended.'],
+          ['Data not showing after another device saved it','Refresh the page or navigate away and back. Data syncs on page load, not in real time automatically.'],
+        ].map(([problem,solution])=>`<div style="padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);">
+          <div style="font-size:12px;font-weight:500;color:var(--red);margin-bottom:3px;">❓ ${problem}</div>
+          <div style="font-size:12px;color:var(--charcoal-mid);line-height:1.6;">→ ${solution}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    ${isOwner?`
+    <!-- OWNER ONLY: MONTHLY TASKS -->
+    <div class="card mb-20" style="border-left:4px solid var(--gold);">
+      <div class="card-header"><div class="card-title">👑 Owner Monthly Checklist</div></div>
+      <div style="font-size:13px;color:var(--charcoal-mid);margin-bottom:14px;line-height:1.7;">Tasks to do at the start of each month when offers change:</div>
+      ${[
+        ['Update offer templates','Go to Manage Offers → delete expired offer definitions → add new month\'s offers with correct benefit names, structure, and expiry days. This takes 5–10 minutes.'],
+        ['Review expiring benefits','Go to Expiring Soon → filter 15 days → review any benefits about to expire → WhatsApp clients if needed.'],
+        ['Check expired unused','Go to Privilege Reports → note how many benefits expired without redemption. If high, consider a more aggressive reminder system.'],
+        ['Review source data','Go to Source Reports → check which source is bringing the most clients and best conversion rate → adjust marketing spend accordingly.'],
+        ['Export monthly data','Go to Privilege Reports → Export CSV. Go to Source Reports → Export CSV. Save both files for your records.'],
+        ['Update staff list if needed','Go to Manage Offers → Staff List → add any new staff, remove those who have left.'],
+      ].map(([task,detail])=>`<div style="padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--gold-pale);margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:500;color:var(--gold);margin-bottom:3px;">☑ ${task}</div>
+        <div style="font-size:12px;color:var(--charcoal-mid);line-height:1.6;">${detail}</div>
+      </div>`).join('')}
+    </div>
+
+    <!-- OWNER ONLY: IMPORTANT NOTES -->
+    <div class="card mb-20" style="border-left:4px solid var(--burgundy);">
+      <div class="card-header"><div class="card-title">⚠ Important Technical Notes (Owner)</div></div>
+      ${[
+        ['PINs reset on new devices','PINs are stored in browser memory, not the database. On a new browser or device, PINs revert to defaults (Front Desk: 1234, Owner: 0000). Change them immediately on any new device via Settings.'],
+        ['Offer templates are not in the database','Offer definitions (prepaid tiers, service offers, benefit names) are stored in the app file itself. If you update offers in Manage Offers and then push a new version of the app file to GitHub, you will need to re-enter your offer customisations. Keep a note of your current offer structure.'],
+        ['Staff list is also not in the database','Same as above — staff names are in the app file. If the file is updated, re-add staff names via Manage Offers → Staff List.'],
+        ['Data is permanent in Supabase','All benefits, notes, and client records saved to the database are permanent unless manually deleted. The free Supabase tier holds up to 500MB — at your scale you will not hit this limit for several years.'],
+        ['Supabase project must stay active','Supabase pauses inactive free projects after 1 week of no activity. To prevent this, simply use the app regularly or upgrade to the Pro plan (approx. $25/month). If the project gets paused, log into supabase.com and click "Restore project".'],
+      ].map(([note,detail])=>`<div style="padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:500;color:var(--burgundy);margin-bottom:3px;">📌 ${note}</div>
+        <div style="font-size:12px;color:var(--charcoal-mid);line-height:1.6;">${detail}</div>
+      </div>`).join('')}
+    </div>`:''}
+
+    <!-- VERSION -->
+    <div style="text-align:center;padding:20px;font-size:11px;color:var(--charcoal-light);">
+      NSalon Ops v1.1.0 · Privilege Tracker + Client Sources · Built on Supabase
+    </div>
+
+  </div>`;
+}
+
+function rmSection(title, points){
+  return`<div style="margin-bottom:18px;">
+    <div style="font-size:13px;font-weight:500;color:var(--charcoal);margin-bottom:8px;display:flex;align-items:center;gap:6px;"><span style="width:3px;height:14px;background:var(--burgundy);border-radius:2px;display:inline-block;flex-shrink:0;"></span>${title}</div>
+    <div style="padding-left:10px;">
+      ${points.map(p=>`<div style="font-size:12px;color:var(--charcoal-mid);line-height:1.7;padding:3px 0;display:flex;gap:8px;align-items:flex-start;"><span style="color:var(--burgundy);flex-shrink:0;margin-top:2px;">›</span><span>${p}</span></div>`).join('')}
+    </div>
+  </div>`;
 }
 </script>
 </body>
