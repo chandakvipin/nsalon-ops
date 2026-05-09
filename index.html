@@ -234,7 +234,7 @@ textarea{resize:vertical;min-height:70px;}
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">NSalon</div>
+    <div class="login-logo">NSalon Ops</div>
     <div class="login-tagline">Operations Dashboard — Select your role</div>
     <div class="role-selector">
       <div class="role-btn" onclick="selectRole('frontdesk',this)">
@@ -341,7 +341,14 @@ window.addEventListener('online',setSynced);
 // ═══════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════
-const PINS={frontdesk:'1234',owner:'0000'};
+// PINs — stored in localStorage so they survive file updates
+const DEFAULT_PINS={frontdesk:'1234',owner:'0000'};
+const PINS={
+  get frontdesk(){return localStorage.getItem('nsalon_pin_frontdesk')||DEFAULT_PINS.frontdesk;},
+  set frontdesk(v){localStorage.setItem('nsalon_pin_frontdesk',v);},
+  get owner(){return localStorage.getItem('nsalon_pin_owner')||DEFAULT_PINS.owner;},
+  set owner(v){localStorage.setItem('nsalon_pin_owner',v);}
+};
 let currentRole=null,selectedRole=null;
 function selectRole(r,el){selectedRole=r;document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');}
 function doLogin(){
