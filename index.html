@@ -369,18 +369,76 @@ function logout(){document.getElementById('login-screen').style.display='flex';d
 // OFFER TEMPLATES
 // ═══════════════════════════════════════════
 let offerTemplates=[
-  {id:'pre5000',type:'prepaid',label:'Prepaid ₹5,000',expiryDays:42,choiceGroups:[{id:'cg1',label:'Choose one option',isChoice:true,options:[{id:'o1a',name:'Nail Extension Removal',qty:2},{id:'o1b',name:'Premium Pedicure',qty:1}]}]},
-  {id:'pre10000',type:'prepaid',label:'Prepaid ₹10,000',expiryDays:42,choiceGroups:[{id:'cg2',label:'Choose one option',isChoice:true,options:[{id:'o2a',name:'Skinora Cleanup',qty:1},{id:'o2b',name:'Café H&F Manicure',qty:1,pairedWith:'o2c'},{id:'o2c',name:'Café H&F Pedicure',qty:1,isPairedChild:true}]}]},
-  {id:'pre15000',type:'prepaid',label:'Prepaid ₹15,000',expiryDays:42,choiceGroups:[{id:'cg3',label:'Choose one option',isChoice:true,options:[{id:'o3a',name:'Skinora Facial',qty:1},{id:'o3b',name:"L'Oréal Hair Spa",qty:1}]}]},
-  {id:'pre20000',type:'prepaid',label:'Prepaid ₹20,000',expiryDays:42,topLevelChoice:true,choiceGroups:[{id:'cg4a',label:'Option A — Bundle',options:[{id:'o4a1',name:'Skeyndor Facial',qty:1},{id:'o4a2',name:'Café H&F Pedi or Mani',qty:1}]},{id:'cg4b',label:'Option B',options:[{id:'o4b',name:'Global Colour',qty:1}]},{id:'cg4c',label:'Option C',options:[{id:'o4c',name:'Keratin',qty:1}]}]},
-  {id:'svc-facial',type:'service',label:'Facial ₹3,500+',expiryDays:10,choiceGroups:[{id:'sg1',label:'Complimentary',options:[{id:'s1a',name:'H&F Pedicure or Manicure',qty:1}]}]},
-  {id:'svc-luxfacial',type:'service',label:'Luxury Facial ₹5,500+',expiryDays:10,choiceGroups:[{id:'sg2',label:'Complimentary',options:[{id:'s2a',name:'Premium Pedicure or Manicure',qty:1}]}]},
-  {id:'svc-pedimani',type:'service',label:'Pedi/Mani ₹1,600+',expiryDays:10,choiceGroups:[{id:'sg3',label:'Complimentary',options:[{id:'s3a',name:'Hair Wash / Blow Dry',qty:1}]}]},
-  {id:'svc-waxing',type:'service',label:'Full Body Waxing ₹3,000',expiryDays:10,choiceGroups:[{id:'sg4',label:'Complimentary',options:[{id:'s4a',name:'Head Oil Massage',qty:1}]}]},
-  {id:'svc-haircolor',type:'service',label:'Hair Color ₹5,000+',expiryDays:10,choiceGroups:[{id:'sg5',label:'Complimentary',options:[{id:'s5a',name:'Hair Spa',qty:1}]}]},
-  {id:'svc-botox',type:'service',label:'Botox ₹6,000+',expiryDays:10,choiceGroups:[{id:'sg6',label:'Complimentary',options:[{id:'s6a',name:'Skinora Cleanup',qty:1}]}]},
-  {id:'svc-hydrafacial',type:'service',label:'HydraFacial ₹4,500',expiryDays:10,choiceGroups:[{id:'sg7',label:'Complimentary',options:[{id:'s7a',name:'H&F Pedicure or Manicure',qty:1}]}]},
-  {id:'manual',type:'manual',label:'Manual / Special Approval',expiryDays:30,choiceGroups:[{id:'mg1',label:'Custom',options:[{id:'m1a',name:'Custom',qty:1}]}]}
+  // ── PREPAID ──
+  // ₹5,000: client picks Option A (2x Nail Removal) OR Option B (Premium Pedicure)
+  {id:'pre5000',type:'prepaid',label:'Prepaid ₹5,000',expiryDays:42,topLevelChoice:true,
+    choiceGroups:[
+      {id:'cg1a',label:'Option A — Nail Extension Removal',options:[
+        {id:'o1a1',name:'Nail Extension Removal #1',qty:1},
+        {id:'o1a2',name:'Nail Extension Removal #2',qty:1}
+      ]},
+      {id:'cg1b',label:'Option B — Pedicure',options:[
+        {id:'o1b',name:'Premium Pedicure',qty:1}
+      ]}
+    ]},
+
+  // ₹10,000: client picks Option A (Skinora Cleanup) OR Option B (Café H&F Mani + Pedi — both slots)
+  {id:'pre10000',type:'prepaid',label:'Prepaid ₹10,000',expiryDays:42,topLevelChoice:true,
+    choiceGroups:[
+      {id:'cg2a',label:'Option A — Skinora Cleanup',options:[
+        {id:'o2a',name:'Skinora Cleanup',qty:1}
+      ]},
+      {id:'cg2b',label:'Option B — Café H&F Mani + Pedi',options:[
+        {id:'o2b1',name:'Café H&F Manicure',qty:1},
+        {id:'o2b2',name:'Café H&F Pedicure',qty:1}
+      ]}
+    ]},
+
+  // ₹15,000: client picks Option A (Skinora Facial) OR Option B (L'Oréal Hair Spa)
+  {id:'pre15000',type:'prepaid',label:'Prepaid ₹15,000',expiryDays:42,topLevelChoice:true,
+    choiceGroups:[
+      {id:'cg3a',label:'Option A — Skinora Facial',options:[
+        {id:'o3a',name:'Skinora Facial',qty:1}
+      ]},
+      {id:'cg3b',label:"Option B — L'Oréal Hair Spa",options:[
+        {id:'o3b',name:"L'Oréal Hair Spa",qty:1}
+      ]}
+    ]},
+
+  // ₹20,000: client picks Option A (Skeyndor Facial + Pedi/Mani bundle) OR Option B (Global Colour) OR Option C (Keratin)
+  {id:'pre20000',type:'prepaid',label:'Prepaid ₹20,000',expiryDays:42,topLevelChoice:true,
+    choiceGroups:[
+      {id:'cg4a',label:'Option A — Skeyndor Facial + Pedi/Mani',options:[
+        {id:'o4a1',name:'Skeyndor Facial',qty:1},
+        {id:'o4a2',name:'Café H&F Pedi or Mani',qty:1}
+      ]},
+      {id:'cg4b',label:'Option B — Global Colour',options:[
+        {id:'o4b',name:'Global Colour',qty:1}
+      ]},
+      {id:'cg4c',label:'Option C — Keratin',options:[
+        {id:'o4c',name:'Keratin',qty:1}
+      ]}
+    ]},
+
+  // ── SERVICE OFFERS ── (single group = no choice, just one complimentary)
+  {id:'svc-facial',type:'service',label:'Facial ₹3,500+',expiryDays:10,topLevelChoice:false,
+    choiceGroups:[{id:'sg1',label:'Complimentary',options:[{id:'s1a',name:'H&F Pedicure or Manicure',qty:1}]}]},
+  {id:'svc-luxfacial',type:'service',label:'Luxury Facial ₹5,500+',expiryDays:10,topLevelChoice:false,
+    choiceGroups:[{id:'sg2',label:'Complimentary',options:[{id:'s2a',name:'Premium Pedicure or Manicure',qty:1}]}]},
+  {id:'svc-pedimani',type:'service',label:'Pedi/Mani ₹1,600+',expiryDays:10,topLevelChoice:false,
+    choiceGroups:[{id:'sg3',label:'Complimentary',options:[{id:'s3a',name:'Hair Wash / Blow Dry',qty:1}]}]},
+  {id:'svc-waxing',type:'service',label:'Full Body Waxing ₹3,000',expiryDays:10,topLevelChoice:false,
+    choiceGroups:[{id:'sg4',label:'Complimentary',options:[{id:'s4a',name:'Head Oil Massage',qty:1}]}]},
+  {id:'svc-haircolor',type:'service',label:'Hair Color ₹5,000+',expiryDays:10,topLevelChoice:false,
+    choiceGroups:[{id:'sg5',label:'Complimentary',options:[{id:'s5a',name:'Hair Spa',qty:1}]}]},
+  {id:'svc-botox',type:'service',label:'Botox ₹6,000+',expiryDays:10,topLevelChoice:false,
+    choiceGroups:[{id:'sg6',label:'Complimentary',options:[{id:'s6a',name:'Skinora Cleanup',qty:1}]}]},
+  {id:'svc-hydrafacial',type:'service',label:'HydraFacial ₹4,500',expiryDays:10,topLevelChoice:false,
+    choiceGroups:[{id:'sg7',label:'Complimentary',options:[{id:'s7a',name:'H&F Pedicure or Manicure',qty:1}]}]},
+
+  // ── MANUAL ──
+  {id:'manual',type:'manual',label:'Manual / Special Approval',expiryDays:30,topLevelChoice:false,
+    choiceGroups:[{id:'mg1',label:'Complimentary',options:[{id:'m1a',name:'Custom',qty:1}]}]}
 ];
 let staffList=['Owner','Manager'];
 const SOURCES=['Walk-in','Instagram','Google','Referral','JustDial','Other'];
@@ -402,37 +460,17 @@ function buildSlots(tmpl){
   const slots=[];if(!tmpl)return slots;
   tmpl.choiceGroups.forEach(grp=>{
     grp.options.forEach(opt=>{
-      if(opt.isPairedChild)return;
-      for(let q=0;q<(opt.qty||1);q++){
-        const sk=(opt.qty||1)>1?opt.id+'_'+q:opt.id;
-        slots.push({
-          slot_key:sk,
-          group_id:grp.id,
-          group_label:grp.label,
-          name:opt.name+((opt.qty||1)>1?' #'+(q+1):''),
-          status:'active',
-          redeemed_on:null,
-          redeemed_by:null,
-          redeemed_service:null,
-          top_level_choice:!!tmpl.topLevelChoice,
-          is_choice_group:!!(grp.isChoice)  // marks simple mutual-exclusion groups
-        });
-      }
-      if(opt.pairedWith){
-        const child=grp.options.find(o=>o.id===opt.pairedWith);
-        if(child)slots.push({
-          slot_key:opt.pairedWith,
-          group_id:grp.id,
-          group_label:grp.label,
-          name:child.name,
-          status:'active',
-          redeemed_on:null,
-          redeemed_by:null,
-          redeemed_service:null,
-          top_level_choice:!!tmpl.topLevelChoice,
-          is_choice_group:!!(grp.isChoice)
-        });
-      }
+      slots.push({
+        slot_key: opt.id,
+        group_id: grp.id,
+        group_label: grp.label,
+        name: opt.name,
+        status: 'active',
+        redeemed_on: null,
+        redeemed_by: null,
+        redeemed_service: null,
+        top_level_choice: !!tmpl.topLevelChoice
+      });
     });
   });
   return slots;
@@ -739,15 +777,8 @@ function renderTopChoiceSlots(b,slots){
   return Object.entries(groups).map(([gid,g])=>{const grey=cg!==null&&cg!==gid;return`<div class="choice-group"><div class="choice-group-label">${g.label}${grey?' — Not selected':''}</div>${g.slots.map(s=>renderSlot(b,s,grey)).join('')}</div>`;}).join('');
 }
 function renderNormalSlots(b,slots){
-  const groups={};
-  slots.forEach(s=>{if(!groups[s.group_id])groups[s.group_id]={label:s.group_label,slots:[],isChoice:s.is_choice_group};groups[s.group_id].slots.push(s);});
-  const multi=Object.keys(groups).length>1;
-  return Object.entries(groups).map(([,g])=>{
-    // For isChoice groups, check if a choice has been made (any slot redeemed or cancelled)
-    const choiceMade=g.isChoice&&g.slots.some(s=>s.status==='redeemed'||s.status==='cancelled');
-    const choiceLabel=choiceMade?`${g.label} — choice locked`:`${g.label} — pick one`;
-    return`${(multi||g.isChoice)?`<div class="choice-group-label">${g.isChoice?choiceLabel:g.label}</div>`:''}${g.slots.map(s=>renderSlot(b,s,s.status==='cancelled')).join('')}`;
-  }).join('');
+  // Only reached for service offers with a single group and no choice
+  return slots.map(s=>renderSlot(b,s,s.status==='cancelled')).join('');
 }
 function renderSlot(b,s,grey){
   const can=s.status==='active'&&b.status==='active';
@@ -784,27 +815,15 @@ async function confirmRedeem(bid,sk){
   const btn=document.getElementById('rd-btn');btn.disabled=true;btn.textContent='Saving…';
   try{
     const arr=await dbGet('benefits',`id=eq.${bid}`);const b=arr?.[0];if(!b)throw new Error('Not found');
-    const tmpl=offerTemplates.find(t=>t.id===b.template_id);
     const thisSlot=b.slots.find(s=>s.slot_key===sk);
 
     const ns=(b.slots||[]).map(s=>{
-      // Mark the redeemed slot
-      if(s.slot_key===sk)return{...s,status:'redeemed',redeemed_on:nowISO(),redeemed_by:staff,redeemed_service:svc||s.name};
-
-      // CASE 1: topLevelChoice (₹20,000 bundle) —
-      // cancel all slots in other groups
-      if(tmpl?.topLevelChoice&&s.group_id!==thisSlot?.group_id&&s.status==='active')
+      // Mark this slot as redeemed
+      if(s.slot_key===sk)
+        return{...s,status:'redeemed',redeemed_on:nowISO(),redeemed_by:staff,redeemed_service:svc||s.name};
+      // If topLevelChoice: cancel every slot NOT in the chosen group
+      if(thisSlot?.top_level_choice && s.group_id!==thisSlot.group_id && s.status==='active')
         return{...s,status:'cancelled'};
-
-      // CASE 2: simple isChoice group (₹5,000 / ₹10,000 / ₹15,000) —
-      // once any slot in this group is redeemed, cancel all OTHER slots
-      // in the SAME group that are still active.
-      // Check both the slot flag AND the template definition (fallback for older records)
-      const grpIsChoice = thisSlot?.is_choice_group ||
-        tmpl?.choiceGroups?.find(g=>g.id===thisSlot?.group_id)?.isChoice;
-      if(grpIsChoice&&s.group_id===thisSlot?.group_id&&s.slot_key!==sk&&s.status==='active')
-        return{...s,status:'cancelled'};
-
       return s;
     });
 
@@ -1288,46 +1307,27 @@ function ofShowOfferModal(editId, forceType){
   const isEdit=!!editId;
   const t=isEdit?offerTemplates.find(x=>x.id===editId):null;
   const type=t?t.type:forceType;
+  const typeLabel=type==='prepaid'?'Prepaid':'Service';
 
-  // Build existing benefits lines for editing
-  // We represent the offer as:
-  //   Label, ExpiryDays, and a list of "benefit lines"
-  //   Each benefit line = { name, qty, pairedName (optional) }
-  //   For prepaid with topLevelChoice, lines are grouped into choice groups
-  //
-  // For simplicity in the UI we support two formats:
-  //   SIMPLE: one list of benefits (client picks one)
-  //   BUNDLE: top-level choice groups (client picks one group)
-
-  const isBundle=t?.topLevelChoice||false;
-
-  // Flatten existing benefits for simple display
-  let existingLines=[];
+  // Build existing groups for editing
+  let existingGroups=[];
   if(t){
-    if(t.topLevelChoice){
-      // Each choice group becomes a line with a group label
-      t.choiceGroups.forEach(g=>{
-        const names=g.options.filter(o=>!o.isPairedChild).map(o=>{
-          let s=o.name;
-          if(o.qty>1)s=`${o.qty}× ${o.name}`;
-          if(o.pairedWith){const ch=g.options.find(x=>x.id===o.pairedWith);if(ch)s+=` + ${ch.name}`;}
-          return s;
-        }).join(' + ');
-        existingLines.push({groupLabel:g.label,names});
-      });
+    t.choiceGroups.forEach(g=>{
+      const names=g.options.map(o=>o.name).join(' + ');
+      existingGroups.push({label:g.label,names});
+    });
+  }
+
+  // Default starting groups
+  if(!existingGroups.length){
+    if(type==='prepaid'){
+      existingGroups=[{label:'Option A',names:''},{label:'Option B',names:''}];
     } else {
-      t.choiceGroups.forEach(g=>{
-        g.options.filter(o=>!o.isPairedChild).forEach(o=>{
-          let nm=o.name;
-          if(o.qty>1)nm=`${o.qty}× ${o.name}`;
-          if(o.pairedWith){const ch=g.options.find(x=>x.id===o.pairedWith);if(ch)nm+=` + ${ch.name}`;}
-          existingLines.push({names:nm});
-        });
-      });
+      existingGroups=[{label:'Complimentary',names:''}];
     }
   }
 
-  const typeLabel=type==='prepaid'?'Prepaid':'Service';
+  omGroupCount=existingGroups.length;
 
   showModal(`<div class="modal" style="max-width:620px;">
     <div class="modal-header">
@@ -1338,53 +1338,39 @@ function ofShowOfferModal(editId, forceType){
 
       <div class="alert alert-info" style="margin-bottom:16px;">
         ${type==='prepaid'
-          ?'<b>Prepaid offer:</b> Client pays a lump sum and gets complimentary services. Define what they receive below.'
-          :'<b>Service offer:</b> Client books a qualifying service and gets a complimentary add-on. Define the trigger and the benefit below.'}
+          ?'<b>Prepaid offer:</b> Define each option the client can choose from. Once they redeem from one option, all other options are locked. Within the chosen option, all slots remain redeemable until expiry.'
+          :'<b>Service offer:</b> One complimentary benefit. Add a single group with the benefit name. If the client can choose (e.g. Pedi OR Mani), note that in the benefit name itself.'}
       </div>
 
-      <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-grid" style="margin-bottom:20px;">
         <div class="form-group full">
-          <label>Offer Label * <span class="form-hint" style="display:inline;">(shown in dropdown)</span></label>
+          <label>Offer Label * <span class="form-hint" style="display:inline;">(shown in Add Benefit dropdown)</span></label>
           <input type="text" id="om-label" placeholder="${type==='prepaid'?'e.g. Prepaid ₹10,000':'e.g. Facial ₹3,500+'}" value="${t?t.label:''}">
         </div>
         <div class="form-group">
           <label>Expiry Days *</label>
-          <input type="number" id="om-expiry" min="1" max="365" placeholder="${type==='prepaid'?'42':'10'}" value="${t?t.expiryDays:(type==='prepaid'?42:10)}">
-          <div class="form-hint">${type==='prepaid'?'Typically 42 days (6 weeks) for prepaid':'Typically 10 days for service offers'}</div>
+          <input type="number" id="om-expiry" min="1" max="365" value="${t?t.expiryDays:(type==='prepaid'?42:10)}">
+          <div class="form-hint">${type==='prepaid'?'Prepaid = 42 days (6 weeks)':'Service offers = 10 days'}</div>
         </div>
         <div class="form-group">
-          <label>Offer Structure</label>
-          <select id="om-structure" onchange="ofStructureChange()">
-            <option value="simple" ${!isBundle?'selected':''}>Simple — client picks one from a list</option>
-            <option value="bundle" ${isBundle?'selected':''}>Bundle Groups — client picks one group</option>
-          </select>
-          <div class="form-hint">Use Bundle Groups for offers like "Option A: Facial + Pedi OR Option B: Keratin"</div>
+          <label>Offer Type</label>
+          <input type="text" value="${typeLabel}" disabled style="background:var(--cream);color:var(--charcoal-light);">
         </div>
       </div>
 
-      <!-- SIMPLE STRUCTURE -->
-      <div id="om-simple-section" style="${isBundle?'display:none':''}">
-        <div class="form-section-title" style="font-family:var(--font-display);font-size:15px;font-weight:500;color:var(--burgundy);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--burgundy-pale);">
-          ${type==='prepaid'?'Complimentary Benefits (client picks one)':'Complimentary Benefit'}
-        </div>
-        <div id="om-simple-lines">
-          ${(isEdit&&!isBundle?existingLines:[{names:''}]).map((l,i)=>ofBenefitLineHTML(i,l.names)).join('')}
-        </div>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="ofAddLine()">+ Add another option</button>
-        <div class="form-hint" style="margin-top:6px;">Each line = one option the client can choose. For "2× Nail Extension Removal", enter <b>qty = 2</b>. For paired services like Mani+Pedi, use the paired field.</div>
+      <div class="form-section-title" style="font-family:var(--font-display);font-size:15px;font-weight:500;color:var(--burgundy);margin-bottom:4px;padding-bottom:8px;border-bottom:1px solid var(--burgundy-pale);">
+        ${type==='prepaid'?'Choice Options (client picks ONE option — all others are cancelled on redemption)':'Complimentary Benefit'}
+      </div>
+      <div class="form-hint" style="margin-bottom:14px;">
+        ${type==='prepaid'
+          ?'Each group = one option. Name it clearly (e.g. "Option A — Facial"). List all services in that option. Use " + " to join multiple services within one option (e.g. "Manicure + Pedicure").'
+          :'Use a single group. If client choice within the benefit (Pedi OR Mani), include that in the name.'}
       </div>
 
-      <!-- BUNDLE STRUCTURE -->
-      <div id="om-bundle-section" style="${isBundle?'':'display:none'}">
-        <div class="form-section-title" style="font-family:var(--font-display);font-size:15px;font-weight:500;color:var(--burgundy);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--burgundy-pale);">
-          Choice Groups (client picks one entire group)
-        </div>
-        <div id="om-bundle-groups">
-          ${(isEdit&&isBundle?existingLines:[{groupLabel:'Option A',names:''}]).map((g,i)=>ofBundleGroupHTML(i,g.groupLabel,g.names)).join('')}
-        </div>
-        <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="ofAddGroup()">+ Add another group</button>
-        <div class="form-hint" style="margin-top:6px;">Example: Group "Option A" = "Skeyndor Facial + Café H&F Pedi or Mani", Group "Option B" = "Global Colour", Group "Option C" = "Keratin".</div>
+      <div id="om-bundle-groups">
+        ${existingGroups.map((g,i)=>ofBundleGroupHTML(i,g.label,g.names)).join('')}
       </div>
+      ${type==='prepaid'?`<button class="btn btn-outline btn-sm" style="margin-top:4px;" onclick="ofAddGroup()">+ Add another option</button>`:''}
 
     </div>
     <div class="modal-footer">
@@ -1421,19 +1407,6 @@ function ofBundleGroupHTML(i,label,names){
 }
 
 let omLineCount=1,omGroupCount=1;
-window.ofStructureChange=function(){
-  const v=document.getElementById('om-structure').value;
-  document.getElementById('om-simple-section').style.display=v==='simple'?'block':'none';
-  document.getElementById('om-bundle-section').style.display=v==='bundle'?'block':'none';
-};
-window.ofAddLine=function(){
-  const container=document.getElementById('om-simple-lines');
-  const div=document.createElement('div');
-  div.innerHTML=ofBenefitLineHTML(omLineCount,'');
-  container.appendChild(div.firstElementChild);
-  omLineCount++;
-};
-window.ofRemoveLine=function(i){const el=document.getElementById('om-line-'+i);if(el)el.remove();};
 window.ofAddGroup=function(){
   const container=document.getElementById('om-bundle-groups');
   const div=document.createElement('div');
@@ -1446,69 +1419,37 @@ window.ofRemoveGroup=function(i){const el=document.getElementById('om-grp-'+i);i
 window.ofSaveOffer=function(editId,type){
   const label=document.getElementById('om-label').value.trim();
   const expiry=parseInt(document.getElementById('om-expiry').value);
-  const structure=document.getElementById('om-structure').value;
   if(!label){toast('Enter offer label.','error');return;}
   if(!expiry||expiry<1){toast('Enter valid expiry days.','error');return;}
 
-  // Generate a unique ID
   const newId=editId||(type+'_'+Date.now());
-
   let choiceGroups=[];
-  let topLevelChoice=false;
   let optCounter=0;
 
-  if(structure==='simple'){
-    // Collect all line inputs
-    const lines=document.querySelectorAll('[id^="om-ln-"]');
+  // Always use groups — collect all group inputs
+  const groups=document.querySelectorAll('[id^="om-grp-"]');
+  let hasContent=false;
+  groups.forEach(grp=>{
+    const idx=grp.id.replace('om-grp-','');
+    const gl=document.getElementById('om-gl-'+idx)?.value.trim();
+    const gn=document.getElementById('om-gn-'+idx)?.value.trim();
+    if(!gn)return;
+    hasContent=true;
+    const grpId='cg_'+newId+'_'+idx;
     const options=[];
-    lines.forEach(inp=>{
-      const idx=inp.id.replace('om-ln-','');
-      const nm=inp.value.trim();
-      if(!nm)return;
-      const qty=parseInt(document.getElementById('om-lq-'+idx)?.value)||1;
-      const optId='o_'+newId+'_'+(optCounter++);
-      // Check if it contains " + " — treat as paired services
-      if(nm.includes(' + ')&&qty===1){
-        const parts=nm.split(' + ');
-        const parentId=optId;
-        const childId='o_'+newId+'_'+(optCounter++);
-        options.push({id:parentId,name:parts[0].trim(),qty:1,pairedWith:childId});
-        options.push({id:childId,name:parts[1].trim(),qty:1,isPairedChild:true});
-      } else {
-        options.push({id:optId,name:nm,qty});
-      }
+    // Split by " + " to create multiple slots within one group
+    const parts=gn.split('+').map(p=>p.trim()).filter(Boolean);
+    parts.forEach(part=>{
+      options.push({id:'o_'+newId+'_'+(optCounter++),name:part,qty:1});
     });
-    if(!options.length){toast('Add at least one benefit line.','error');return;}
-    choiceGroups=[{id:'cg_'+newId,label:'Choose one option',isChoice:true,options}];
-    topLevelChoice=false;
+    choiceGroups.push({id:grpId,label:gl||('Option '+(choiceGroups.length+1)),options});
+  });
 
-  } else {
-    // Bundle groups
-    topLevelChoice=true;
-    const groups=document.querySelectorAll('[id^="om-grp-"]');
-    let hasContent=false;
-    groups.forEach(grp=>{
-      const idx=grp.id.replace('om-grp-','');
-      const gl=document.getElementById('om-gl-'+idx)?.value.trim();
-      const gn=document.getElementById('om-gn-'+idx)?.value.trim();
-      if(!gn)return;
-      hasContent=true;
-      const grpId='cg_'+newId+'_'+idx;
-      const options=[];
-      // Split by " + " for paired services within the group
-      const parts=gn.split(' + ');
-      if(parts.length>1){
-        const parentId='o_'+newId+'_'+(optCounter++);
-        const childId='o_'+newId+'_'+(optCounter++);
-        options.push({id:parentId,name:parts[0].trim(),qty:1,pairedWith:childId});
-        options.push({id:childId,name:parts.slice(1).join(' + ').trim(),qty:1,isPairedChild:true});
-      } else {
-        options.push({id:'o_'+newId+'_'+(optCounter++),name:gn,qty:1});
-      }
-      choiceGroups.push({id:grpId,label:gl||('Option '+(choiceGroups.length+1)),options});
-    });
-    if(!hasContent){toast('Add at least one group with a benefit.','error');return;}
-  }
+  if(!hasContent){toast('Add at least one option with a benefit.','error');return;}
+
+  // topLevelChoice = true when there are multiple groups (client picks one)
+  // topLevelChoice = false for single-group service offers (no choice to make)
+  const topLevelChoice = choiceGroups.length > 1;
 
   const newOffer={id:newId,type,label,expiryDays:expiry,topLevelChoice,choiceGroups};
 
@@ -1517,13 +1458,12 @@ window.ofSaveOffer=function(editId,type){
     if(i>-1)offerTemplates[i]=newOffer;
     toast('Offer updated.','success');
   } else {
-    // Insert before 'manual'
     const manualIdx=offerTemplates.findIndex(t=>t.id==='manual');
     if(manualIdx>-1)offerTemplates.splice(manualIdx,0,newOffer);
     else offerTemplates.push(newOffer);
     toast('Offer added.','success');
   }
-  omLineCount=1;omGroupCount=1;
+  omGroupCount=0;
   closeModal();
   renderOffers();
 };
@@ -1615,19 +1555,37 @@ function renderSettings(){
       <div style="margin-top:12px;font-size:12px;color:var(--charcoal-light);">Front Desk cannot undo their own actions. Any correction or override must be requested from the Owner / Manager.</div>
     </div>
 
-    <!-- APP INFO -->
-    <div class="card">
+    <!-- DELETE CLIENT DATA -->
+    <div class="card mb-20" style="border-left:4px solid var(--red);">
+      <div class="card-header">
+        <div>
+          <div class="card-title" style="color:var(--red);">Delete Client Data</div>
+          <div class="card-subtitle">Permanently remove a client and all associated records</div>
+        </div>
+      </div>
+      <div class="alert alert-error" style="margin-bottom:16px;">
+        ⚠ This action is <b>permanent and cannot be undone</b>. All benefit records, notes, and the client source record for this mobile number will be deleted from the database. A deletion log entry will be saved for future reference. Use only when absolutely necessary.
+      </div>
+      <div class="form-grid" style="max-width:500px;">
+        <div class="form-group full">
+          <label>Client Mobile Number</label>
+          <input type="tel" id="del-mobile" placeholder="Enter 10-digit mobile number" maxlength="10" oninput="delLookup()">
+        </div>
+      </div>
+      <div id="del-preview" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- APP INFO -->\n    <div class="card">
       <div class="card-header"><div class="card-title">App Information</div></div>
       <div class="report-stat"><span class="report-stat-label">App Name</span><span class="report-stat-value">NSalon Ops</span></div>
-      <div class="report-stat"><span class="report-stat-label">Version</span><span class="report-stat-value">1.1.0</span></div>
+      <div class="report-stat"><span class="report-stat-label">Version</span><span class="report-stat-value">1.2.0</span></div>
       <div class="report-stat"><span class="report-stat-label">Database</span><span class="report-stat-value">Supabase (PostgreSQL)</span></div>
       <div class="report-stat"><span class="report-stat-label">Modules Active</span><span class="report-stat-value">Privilege Tracker · Client Sources</span></div>
       <div class="report-stat"><span class="report-stat-label">Modules Planned</span><span class="report-stat-value">Staff Log · Birthday Follow-ups · Prepaid Balance</span></div>
       <div class="report-stat" style="border:none;"><span class="report-stat-label">Support</span><span class="report-stat-value" style="font-size:13px;color:var(--charcoal-light);">Contact your developer for changes</span></div>
     </div>
 
-  </div>`;
-}
+  </div>`;\n}
 
 function changePIN(role){
   const currentId=role==='frontdesk'?'fd-current':'ow-current';
@@ -1647,6 +1605,161 @@ function changePIN(role){
   document.getElementById(newId).value='';
   document.getElementById(confirmId).value='';
   toast(label+' PIN updated successfully.','success');
+}
+
+// ═══════════════════════════════════════════
+// DELETE CLIENT (Owner only — Settings)
+// ═══════════════════════════════════════════
+let delTimer=null;
+async function delLookup(){
+  clearTimeout(delTimer);
+  const mob=document.getElementById('del-mobile')?.value.trim();
+  const preview=document.getElementById('del-preview');
+  if(!preview)return;
+  if(!mob||mob.length!==10){preview.innerHTML='';return;}
+  preview.innerHTML=`<div class="loading-wrap" style="padding:16px;"><div class="spinner"></div> Looking up client…</div>`;
+  delTimer=setTimeout(async()=>{
+    try{
+      const [benefits,clients,notes]=await Promise.all([
+        dbGet('benefits',`mobile=eq.${mob}&order=created_at.desc`),
+        dbGet('clients',`mobile=eq.${mob}&limit=1`),
+        dbGet('benefit_notes',`mobile=eq.${mob}`)
+      ]);
+      const clientRec=clients?.[0]||null;
+      const name=benefits?.[0]?.client_name||clientRec?.name||'Unknown';
+      if(!benefits.length&&!clientRec){
+        preview.innerHTML=`<div class="alert alert-info">No records found for this mobile number.</div>`;
+        return;
+      }
+      const bAct=benefits.filter(b=>b.status==='active').length;
+      const bTotal=benefits.length;
+      const hasActiveBenefits=bAct>0;
+      preview.innerHTML=`
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;">
+          <div style="padding:14px 16px;background:var(--cream);border-bottom:1px solid var(--border);">
+            <div style="font-weight:500;font-size:14px;">${name}</div>
+            <div class="ts">${mob}</div>
+          </div>
+          <div style="padding:14px 16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+              <div style="text-align:center;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);">
+                <div style="font-family:var(--font-display);font-size:22px;font-weight:600;color:${bAct>0?'var(--red)':'var(--charcoal)'};">${bAct}</div>
+                <div class="ts">Active Benefits</div>
+              </div>
+              <div style="text-align:center;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);">
+                <div style="font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--charcoal);">${bTotal}</div>
+                <div class="ts">Total Benefits</div>
+              </div>
+              <div style="text-align:center;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);">
+                <div style="font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--charcoal);">${notes?.length||0}</div>
+                <div class="ts">Notes</div>
+              </div>
+            </div>
+            ${hasActiveBenefits?`
+            <div class="alert alert-error" style="margin-bottom:14px;">
+              ⚠ <b>This client has ${bAct} active benefit(s).</b> Deleting will permanently remove unredeemed benefits. This cannot be reversed. Are you absolutely sure?
+            </div>`:`
+            <div class="alert alert-warn" style="margin-bottom:14px;">
+              This client has no active benefits. All historical records will still be permanently deleted.
+            </div>`}
+            ${clientRec?`<div style="font-size:12px;color:var(--charcoal-light);margin-bottom:12px;">Source record found: <b>${clientRec.source}</b> · First visit ${fmtD(clientRec.first_visit_date)}</div>`:'<div style="font-size:12px;color:var(--charcoal-light);margin-bottom:12px;">No client source record found.</div>'}
+            <div class="form-group" style="margin-bottom:12px;">
+              <label>Reason for deletion * <span class="form-hint" style="display:inline;">(saved permanently in deletion log)</span></label>
+              <textarea id="del-reason" placeholder="e.g. Duplicate entry, Client requested data removal, Test record…" style="min-height:60px;"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:16px;">
+              <label>Confirm by typing the mobile number again *</label>
+              <input type="tel" id="del-confirm-mob" placeholder="Re-enter mobile number to confirm" maxlength="10">
+            </div>
+            <button class="btn btn-danger" onclick="deleteClient('${mob}','${name}',${bTotal},${notes?.length||0},${!!clientRec})">
+              Delete All Records for ${name}
+            </button>
+          </div>
+        </div>`;
+    }catch(e){preview.innerHTML=`<div class="alert alert-error">Lookup failed: ${e.message}</div>`;}
+  },400);
+}
+
+async function deleteClient(mobile,name,benefitCount,noteCount,hasClientRec){
+  if(currentRole!=='owner'){toast('Access denied.','error');return;}
+  const reason=document.getElementById('del-reason')?.value.trim();
+  const confirmMob=document.getElementById('del-confirm-mob')?.value.trim();
+  if(!reason){toast('Enter a reason for deletion.','error');return;}
+  if(confirmMob!==mobile){toast('Mobile number confirmation does not match.','error');return;}
+
+  // Final confirm modal
+  showModal(`<div class="modal">
+    <div class="modal-header"><div class="modal-title" style="color:var(--red);">Final Confirmation</div><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="alert alert-error" style="margin-bottom:16px;">
+        You are about to <b>permanently delete</b> all records for <b>${name} (${mobile})</b>:<br><br>
+        · ${benefitCount} benefit record(s)<br>
+        · ${noteCount} note(s)<br>
+        ${hasClientRec?'· 1 client source record':''}
+        <br><br>
+        <b>This cannot be undone.</b>
+      </div>
+      <div style="font-size:13px;color:var(--charcoal-mid);">Reason: <i>${reason}</i></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel — Go Back</button>
+      <button class="btn btn-danger" id="del-final-btn" onclick="confirmDeleteClient('${mobile}','${name}','${reason.replace(/'/g,"\\'")}')">Yes, Delete Permanently</button>
+    </div>
+  </div>`);
+}
+
+async function confirmDeleteClient(mobile,name,reason){
+  const btn=document.getElementById('del-final-btn');
+  btn.disabled=true;btn.textContent='Deleting…';
+  try{
+    // 1. Fetch all benefit IDs for this mobile
+    const benefits=await dbGet('benefits',`mobile=eq.${mobile}`);
+
+    // 2. Delete all benefit_notes for this mobile
+    if(benefits.length){
+      // Delete notes for each benefit
+      for(const b of benefits){
+        await fetch(`${SB}/rest/v1/benefit_notes?benefit_id=eq.${b.id}`,{method:'DELETE',headers:H});
+      }
+    }
+    // Also delete any notes directly linked by mobile
+    await fetch(`${SB}/rest/v1/benefit_notes?mobile=eq.${mobile}`,{method:'DELETE',headers:H});
+
+    // 3. Delete all benefits
+    await fetch(`${SB}/rest/v1/benefits?mobile=eq.${mobile}`,{method:'DELETE',headers:H});
+
+    // 4. Delete client source record
+    await fetch(`${SB}/rest/v1/clients?mobile=eq.${mobile}`,{method:'DELETE',headers:H});
+
+    // 5. Save a deletion log note (stored in benefit_notes with a special sentinel benefit_id)
+    // We save it as a standalone note with a null benefit_id — just for audit trail
+    const logEntry={
+      benefit_id: null,
+      mobile: mobile,
+      text: `[DELETION LOG] Client "${name}" (${mobile}) permanently deleted by Owner. Reason: ${reason}. Records deleted: ${benefits.length} benefit(s). Deleted at: ${fmtDT(nowISO())}.`,
+      author: 'Owner',
+      role: 'owner',
+      created_at: nowISO()
+    };
+    // Store in benefit_notes with null benefit_id — bypass FK constraint by inserting directly
+    await fetch(`${SB}/rest/v1/benefit_notes`,{method:'POST',headers:H,body:JSON.stringify(logEntry)});
+
+    setSynced();
+    closeModal();
+    toast(`All records for ${name} deleted. Deletion logged.`,'default');
+
+    // Clear the form
+    const mobInput=document.getElementById('del-mobile');
+    if(mobInput)mobInput.value='';
+    const preview=document.getElementById('del-preview');
+    if(preview)preview.innerHTML=`
+      <div class="alert alert-success">
+        ✅ Deletion complete. All records for <b>${name} (${mobile})</b> have been permanently removed. A deletion log entry has been saved.
+      </div>`;
+  }catch(e){
+    toast('Deletion failed: '+e.message,'error');
+    btn.disabled=false;btn.textContent='Yes, Delete Permanently';
+  }
 }
 
 // ═══════════════════════════════════════════
