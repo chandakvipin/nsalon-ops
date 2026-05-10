@@ -192,7 +192,7 @@ textarea{resize:vertical;min-height:70px;}
 .login-sub{font-size:11px;color:var(--charcoal-light);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;}
 .login-tagline{font-size:12px;color:var(--charcoal-light);margin-bottom:28px;}
 .role-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
-.role-btn{padding:12px;border:2px solid var(--border);border-radius:var(--radius-md);cursor:pointer;transition:all 0.15s;background:var(--cream);}
+.role-btn{padding:12px;border:2px solid var(--border);border-radius:var(--radius-md);cursor:pointer;transition:all 0.15s;background:var(--cream);width:100%;text-align:center;font-family:var(--font-body);}
 .role-btn:hover{border-color:var(--burgundy-light);}
 .role-btn.selected{border-color:var(--burgundy);background:var(--burgundy-pale);}
 .role-btn-title{font-weight:500;font-size:13px;}
@@ -237,14 +237,14 @@ textarea{resize:vertical;min-height:70px;}
     <div class="login-logo">NSalon Ops</div>
     <div class="login-tagline">Operations Dashboard — Select your role</div>
     <div class="role-selector">
-      <div class="role-btn" onclick="selectRole('frontdesk',this)">
-        <div class="role-btn-title">Front Desk</div>
+      <button class="role-btn" id="role-btn-frontdesk" onclick="selectRole('frontdesk',this)">
+        <div class="role-btn-title">Front Desk / Manager</div>
         <div class="role-btn-sub">Add · Search · Redeem</div>
-      </div>
-      <div class="role-btn" onclick="selectRole('owner',this)">
-        <div class="role-btn-title">Owner / Manager</div>
+      </button>
+      <button class="role-btn" id="role-btn-owner" onclick="selectRole('owner',this)">
+        <div class="role-btn-title">Owner</div>
         <div class="role-btn-sub">Full Access</div>
-      </div>
+      </button>
     </div>
     <div class="form-group" style="text-align:left;margin-bottom:16px;">
       <label>PIN</label>
@@ -252,7 +252,7 @@ textarea{resize:vertical;min-height:70px;}
     </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">Sign In</button>
     <div id="login-error" class="alert alert-error hidden" style="margin-top:12px;font-size:12px;"></div>
-    <div style="margin-top:18px;font-size:11px;color:var(--charcoal-light);">Front Desk <b>1234</b> · Owner <b>0000</b></div>
+    <div style="margin-top:18px;font-size:11px;color:var(--charcoal-light);">Front Desk / Manager PIN <b>1234</b> · Owner PIN <b>0000</b></div>
   </div>
 </div>
 
@@ -282,7 +282,7 @@ textarea{resize:vertical;min-height:70px;}
       <div class="nav-item owner-only" data-page="settings" onclick="navigate('settings',this)"><span class="icon">⚙</span> Settings</div>
     </nav>
     <div class="sidebar-footer">
-      <div id="sidebar-role-badge" class="role-badge">Front Desk</div>
+      <div id="sidebar-role-badge" class="role-badge">Front Desk / Manager</div>
       <div style="margin-top:8px;"><button class="btn btn-ghost" style="color:rgba(255,255,255,0.45);font-size:12px;padding:4px 0;" onclick="logout()">Sign out</button></div>
     </div>
   </div>
@@ -358,8 +358,8 @@ function doLogin(){
   currentRole=selectedRole;
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
-  document.getElementById('sidebar-role-badge').textContent=currentRole==='owner'?'Owner / Manager':'Front Desk';
-  document.getElementById('topbar-role').textContent=currentRole==='owner'?'Owner':'Front Desk';
+  document.getElementById('sidebar-role-badge').textContent=currentRole==='owner'?'Owner':'Front Desk / Manager';
+  document.getElementById('topbar-role').textContent=currentRole==='owner'?'Owner':'Manager';
   if(currentRole!=='owner')document.querySelectorAll('.owner-only').forEach(e=>e.style.display='none');
   navigate('dashboard',document.querySelector('[data-page=dashboard]'));
 }
@@ -1575,7 +1575,8 @@ function renderSettings(){
       <div id="del-preview" style="margin-top:14px;"></div>
     </div>
 
-    <!-- APP INFO -->\n    <div class="card">
+    <!-- APP INFO -->
+    <div class="card">
       <div class="card-header"><div class="card-title">App Information</div></div>
       <div class="report-stat"><span class="report-stat-label">App Name</span><span class="report-stat-value">NSalon Ops</span></div>
       <div class="report-stat"><span class="report-stat-label">Version</span><span class="report-stat-value">1.2.0</span></div>
@@ -1585,7 +1586,8 @@ function renderSettings(){
       <div class="report-stat" style="border:none;"><span class="report-stat-label">Support</span><span class="report-stat-value" style="font-size:13px;color:var(--charcoal-light);">Contact your developer for changes</span></div>
     </div>
 
-  </div>`;\n}
+  </div>`;
+}
 
 function changePIN(role){
   const currentId=role==='frontdesk'?'fd-current':'ow-current';
